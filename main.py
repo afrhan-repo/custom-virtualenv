@@ -1,8 +1,9 @@
+import re
 import os
 import inquirer
 import json
 import subprocess
-
+import importlib.util
 
 # Get all installed packages in user global environment
 def getAllInstalledPackage():
@@ -82,6 +83,7 @@ def create_virtualenv(virtualenv_name):
             subprocess.run(command, check=True)
             print("Creating a new virtual environment")
             command = ["virtualenv" ,virtualenv_name , "-p","python3"]
+            subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
         else:
             print("Exiting")
             exit(0)
@@ -92,12 +94,31 @@ def create_virtualenv(virtualenv_name):
         subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
 
 
+def all_packages_dir(pacakges_list : list)-> list:
+    dir_list = []
+    for package in pacakges_list:
+        package_spec = importlib.util.find_spec(package)
+        
+        #Tring alternating package names if package_spec is not found
+
+
+
+
+        if package_spec is not None:
+            package_dir = package_spec.origin.rsplit('/', 1)[0] #type: ignore
+        dir_list.append(package_dir) #type: ignore 
+    return dir_list
+
 def main():
     virtualenv_name = input("Enter the name of the virtual environment: ")
     create_virtualenv(virtualenv_name)
     selected_packages = user_package_choice()
     all_dependencies = get_nested_dependencies(selected_packages)
-    
+
+    # Get the directory of all the package
+    all_packages_directory = all_packages_dir(all_dependencies)
+
+    print(all_packages_directory) 
 
 if __name__ == "__main__":
     main()
