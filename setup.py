@@ -1,7 +1,4 @@
 from setuptools import setup, find_packages
-import os
-
-# Checking PulseAudio is installed or not
 
 setup(
     name="custom-virtualenv",
