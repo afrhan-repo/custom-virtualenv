@@ -111,8 +111,8 @@ def all_selected_Packages_dir(pacakges_list : list)-> list:
             package_dir = package_spec.origin.rsplit('/', 1)[0] #type: ignore
             dir_list.append(package_dir)
         else:
-            package = package.replace("-", "_")
-            pattern = re.sub(r'^py', '', package, flags=re.IGNORECASE)
+            new_package_name = package.replace("-", "_")
+            pattern = re.sub(r'^py', '', new_package_name, flags=re.IGNORECASE)
             spec = importlib.util.find_spec(pattern.lower())
             if spec is not None:
                 package_dir = spec.origin.rsplit('/', 1)[0] #type: ignore
@@ -121,10 +121,13 @@ def all_selected_Packages_dir(pacakges_list : list)-> list:
                 new_package_name = package.split('_')[0]
                 spec = importlib.util.find_spec(new_package_name)
                 if spec is not None:
-                    package_dir = spec.submodule_search_locations 
-                    dir_list.append(package_dir)
+                    try :
+                        package_dir = list(spec.submodule_search_locations)[0] #type: ignore 
+                        dir_list.append(package_dir)
+                    except:
+                        missing_dir_packages.append(package)
                 else:
-                    print(f"Could not find the package {package}.Installing them manually.")
+                    print(f"Could not find the package {package}. Installing them manually.")
                     missing_dir_packages.append(package)
 
     return dir_list,missing_dir_packages #type: ignore
@@ -150,8 +153,9 @@ def main():
     # Get the directory of all the package
     all_packages_directory,missing_dir_packages = all_selected_Packages_dir(all_dependencies)
     #cooy the packsges to the virtual environment
-    command = ["cp", "-r"] + all_packages_directory + [virtualenv_path]
-    subprocess.run(command, check=True)
+    for package_dir in all_packages_directory:
+        command = ["cp", "-r", package_dir, virtualenv_path + "/lib/python3.11/site-packages/"]
+        subprocess.run(command, check=True)
 
     #Activate the virtual environment and install the missing packages
     install_missing_packages(virtualenv_path,missing_dir_packages)
