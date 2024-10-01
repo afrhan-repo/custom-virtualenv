@@ -2,7 +2,6 @@
 This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "cp" to make it faster
 """
 
-
 import re
 import os
 import inquirer
@@ -130,6 +129,15 @@ def all_selected_Packages_dir(pacakges_list : list)-> list:
 
     return dir_list,missing_dir_packages #type: ignore
 
+def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
+    pip_path = os.path.join(venv_path,"bin","pip")
+
+    #Installing those packages whose directory could not be copied to vorutal environment
+    subprocess.run([f"{pip_path}","install"] + missing_dir_packagesissingPackages,check=True)
+
+
+
+
 def main():
     virtualenv_name = input("Enter the name of the virtual environment: ")
     if virtualenv_name=="":
@@ -140,9 +148,16 @@ def main():
     all_dependencies = get_nested_dependencies(selected_packages)
 
     # Get the directory of all the package
-    all_packages_directory = all_selected_Packages_dir(all_dependencies)
+    all_packages_directory,missing_dir_packages = all_selected_Packages_dir(all_dependencies)
+    #cooy the packsges to the virtual environment
+    command = ["cp", "-r"] + all_packages_directory + [virtualenv_path]
+    subprocess.run(command, check=True)
 
-    print(len(all_packages_directory) )
+    #Activate the virtual environment and install the missing packages
+    install_missing_packages(virtualenv_path,missing_dir_packages)
+
+
+
 
 if __name__ == "__main__":
     main()
