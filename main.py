@@ -1,3 +1,8 @@
+"""
+This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "cp" to make it faster
+"""
+
+
 import re
 import os
 import inquirer
@@ -42,7 +47,6 @@ def user_package_choice():
 def get_nested_dependencies(packages):
     already_seen_packages = set()  # Track visited packages to avoid loops
     all_installed_packages = getAllInstalledPackage()
-    
     def fetch_deps(package_list):
         all_dependencies = []
 
@@ -67,7 +71,7 @@ def get_nested_dependencies(packages):
     return fetch_deps(packages)
 
 
-def create_virtualenv(virtualenv_name):
+def create_virtualenv(virtualenv_name) -> str:
     cwd = os.getcwd()
 
     #Path to the virtual environment
@@ -84,6 +88,7 @@ def create_virtualenv(virtualenv_name):
             print("Creating a new virtual environment")
             command = ["virtualenv" ,virtualenv_name , "-p","python3"]
             subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
+            return path_to_venv
         else:
             print("Exiting")
             exit(0)
@@ -92,33 +97,52 @@ def create_virtualenv(virtualenv_name):
         print("Creating virtual environment named ",virtualenv_name)
         command = ["virtualenv" ,virtualenv_name , "-p","python3","--system-site-packages"]
         subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
+        return path_to_venv
 
 
-def all_packages_dir(pacakges_list : list)-> list:
+def all_selected_Packages_dir(pacakges_list : list)-> list:
     dir_list = []
+    missing_dir_packages = []
     for package in pacakges_list:
         package_spec = importlib.util.find_spec(package)
         
-        #Tring alternating package names if package_spec is not found
-
-
-
+        #Tring for chainging the package name
 
         if package_spec is not None:
             package_dir = package_spec.origin.rsplit('/', 1)[0] #type: ignore
-        dir_list.append(package_dir) #type: ignore 
-    return dir_list
+            dir_list.append(package_dir)
+        else:
+            package = package.replace("-", "_")
+            pattern = re.sub(r'^py', '', package, flags=re.IGNORECASE)
+            spec = importlib.util.find_spec(pattern.lower())
+            if spec is not None:
+                package_dir = spec.origin.rsplit('/', 1)[0] #type: ignore
+                dir_list.append(package_dir)
+            else:
+                new_package_name = package.split('_')[0]
+                spec = importlib.util.find_spec(new_package_name)
+                if spec is not None:
+                    package_dir = spec.submodule_search_locations 
+                    dir_list.append(package_dir)
+                else:
+                    print(f"Could not find the package {package}.Installing them manually.")
+                    missing_dir_packages.append(package)
+
+    return dir_list,missing_dir_packages #type: ignore
 
 def main():
     virtualenv_name = input("Enter the name of the virtual environment: ")
-    create_virtualenv(virtualenv_name)
+    if virtualenv_name=="":
+        print("Please enter a valid name")
+        exit(0)
+    virtualenv_path = create_virtualenv(virtualenv_name)
     selected_packages = user_package_choice()
     all_dependencies = get_nested_dependencies(selected_packages)
 
     # Get the directory of all the package
-    all_packages_directory = all_packages_dir(all_dependencies)
+    all_packages_directory = all_selected_Packages_dir(all_dependencies)
 
-    print(all_packages_directory) 
+    print(len(all_packages_directory) )
 
 if __name__ == "__main__":
     main()
