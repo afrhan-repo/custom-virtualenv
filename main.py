@@ -88,7 +88,8 @@ def create_virtualenv(virtualenv_name) -> str:
 
     # Path to the virtual environment
     path_to_venv = os.path.join(cwd, virtualenv_name)
-
+    
+    command_to_create_venv = ["virtualenv", virtualenv_name, "-p", "python3"]
     # Check if the virtual environment already exists
     if os.path.exists(path_to_venv):
         print("Virtual environment already exists")
@@ -100,8 +101,7 @@ def create_virtualenv(virtualenv_name) -> str:
             command = ["rm", "-rf", path_to_venv]
             subprocess.run(command, check=True)
             print("Creating a new virtual environment")
-            command = ["virtualenv", virtualenv_name, "-p", "python3"]
-            subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
             return path_to_venv
         else:
             print("Exiting")
@@ -109,14 +109,7 @@ def create_virtualenv(virtualenv_name) -> str:
 
     else:
         print("Creating virtual environment named ", virtualenv_name)
-        command = [
-            "virtualenv",
-            virtualenv_name,
-            "-p",
-            "python3",
-            "--system-site-packages",
-        ]
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
         return path_to_venv
 
 
@@ -126,6 +119,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
 
     def add_to_dir(package_dir):
         if package_dir.endswith("__init__.py"):
+            #Sppiting the package_dir to get the parent directory
             package_dir = package_dir.rsplit("/", 1)[0]
             dir_list.append(package_dir)
         else:
@@ -148,6 +142,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
                 new_package_name = new_package_name.split("_")[0]
                 package_spec = importlib.util.find_spec(new_package_name)
                 if package_spec is not None:
+                    #Used try except block to handle the case when submodule_search_locations return None
                     try:
                         package_dir = list(package_spec.submodule_search_locations)[0]  # type: ignore
                         dir_list.append(package_dir)
