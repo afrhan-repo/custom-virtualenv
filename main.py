@@ -1,7 +1,7 @@
 """
 This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "xcp" to make it faster
 """
-
+import argparse
 import sys
 import re
 import os
@@ -177,21 +177,43 @@ def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
             [f"{pip_path}", "install"] + missing_dir_packagesissingPackages, check=True
         )
 
+
+def parse_arguments():
+        parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager")
+        parser.add_argument('-i', '--interactive', action='store_true', help='Run in interactive mode')
+        parser.add_argument('-l', '--list', metavar='file', help='Provide requirements file')
+        
+        return parser.parse_args()
+
+
 #Main function to run the program
 def main():
+
+    if len(sys.argv) == 1:  # No arguments provided
+        print("Error: No arguments provided. Use -i or -l flags.")
+        sys.exit(1)
     virtualenv_name = input("Enter the name of the virtual environment: ")
     if virtualenv_name == "":
         print("Please enter a valid name")
-        exit(0)
+        sys.exit(1)
 
     virtualenv_path = create_virtualenv(virtualenv_name)
-    selected_packages = user_package_choice()
-    all_dependencies = get_nested_dependencies(selected_packages)
+    
+    #Parsing the arguments
+    args = parse_arguments()
+
+    if args.interactive:
+        print("\nRunning in interactive mode")
+        selected_packages = user_package_choice()
+    elif args.list:
+        with open(args.list) as f:
+            #Removing version number from the package names
+            selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
+    all_dependencies = get_nested_dependencies(selected_packages) # type: ignore
     
     #Determining the python version 
     version_info = sys.version_info
     version = f"{version_info.major}.{version_info.minor}"
-    print(version)
 
     # Get the directory of all the package
     all_packages_directory, missing_dir_packages = all_selected_Packages_dir(
@@ -205,6 +227,7 @@ def main():
         try:
             #At first checking if xcp is installed
             subprocess.run(["whereis", "xcp"], check=True, stdout=subprocess.DEVNULL)
+
             subprocess.run(defaultCommand, check=True, shell=True)
         except:
             #Putting * in the command to copy all the .dist-info dirs
