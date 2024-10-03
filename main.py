@@ -123,28 +123,27 @@ def create_virtualenv(virtualenv_name) -> str:
 def all_selected_Packages_dir(pacakges_list: list) -> list:
     dir_list = []
     missing_dir_packages = []
+
+    def add_to_dir(package_dir):
+        if package_dir.endswith("__init__.py"):
+            package_dir = package_dir.rsplit("/", 1)[0]
+            dir_list.append(package_dir)
+        else:
+            dir_list.append(package_dir)
+
     for package in pacakges_list:
         package_spec = importlib.util.find_spec(package)
 
         # Tring for chainging the package name
 
         if package_spec is not None:
-            if package_spec.origin.endswith("__init__.py"):  # type: ignore
-                package_dir = package_spec.origin.rsplit("/", 1)[0]  # type: ignore
-                dir_list.append(package_dir)
-            else:
-                dir_list.append(package_spec.origin)
+            add_to_dir(package_spec.origin)        
         else:
             new_package_name = package.replace("-", "_")
             pattern = re.sub(r"^py", "", new_package_name, flags=re.IGNORECASE)
             package_spec = importlib.util.find_spec(pattern.lower())
             if package_spec is not None:
-                if package_spec.origin.endswith("__init__.py"):  # type: ignore
-                    # Splitting if the package dit is not a file path
-                    package_dir = package_spec.origin.rsplit("/", 1)[0]  # type: ignore
-                    dir_list.append(package_dir)
-                else:
-                    dir_list.append(package_spec.origin)
+                add_to_dir(package_spec.origin)
             else:
                 new_package_name = new_package_name.split("_")[0]
                 package_spec = importlib.util.find_spec(new_package_name)
@@ -153,18 +152,20 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
                         package_dir = list(package_spec.submodule_search_locations)[0]  # type: ignore
                         dir_list.append(package_dir)
                     except:
+                        #If submodule_search_locations return None ,then add to missing_dir_packages
                         missing_dir_packages.append(package)
                 else:
                     print(
                         f"Could not find the package {package}. Installing them manually."
                     )
                     missing_dir_packages.append(package)
-
+    #Converting the list to set to remove duplicates
     return list(set(dir_list)), missing_dir_packages  # type: ignore
 
 
 def split_dir_list(folder_list, chunk_size):
-    # Splitting the list into chunks of 'chunk_size'
+    # Splitting the list into dir chunks of 'chunk_size'
+    #I did this because copying all the packages at once was taking too long and make code slow
     return [
         folder_list[i : i + chunk_size] for i in range(0, len(folder_list), chunk_size)
     ]
@@ -173,14 +174,15 @@ def split_dir_list(folder_list, chunk_size):
 def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
     if len(missing_dir_packagesissingPackages) == 0:
         return  # No missing packages to install
-    pip_path = os.path.join(venv_path, "bin", "pip")
+    else:
+        pip_path = os.path.join(venv_path, "bin", "pip")
 
-    # Installing those packages whose directory could not be copied to vorutal environment
-    subprocess.run(
-        [f"{pip_path}", "install"] + missing_dir_packagesissingPackages, check=True
-    )
+        # Installing those packages whose directory could not be copied to vorutal environment
+        subprocess.run(
+            [f"{pip_path}", "install"] + missing_dir_packagesissingPackages, check=True
+        )
 
-
+#Main function to run the program
 def main():
     virtualenv_name = input("Enter the name of the virtual environment: ")
     if virtualenv_name == "":
@@ -206,9 +208,11 @@ def main():
         defaultCommand = f"xcp --recursive {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
         try:
-            #Checking if xcp is installed
+            #At first checking if xcp is installed
+            subprocess.run(["whereis", "xcp"], check=True, stdout=subprocess.DEVNULL)
             subprocess.run(defaultCommand, check=True, shell=True)
         except:
+            #Putting * in the command to copy all the .dist-info dirs
             command = f"cp -r {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
                 
