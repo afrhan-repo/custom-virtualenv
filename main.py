@@ -38,7 +38,7 @@ def user_package_choice():
             "selected_packages",
             message="What packages do you want in your virtual environment?",
             choices=package_name_list,
-        ),
+        )
     ]
     selected_packages = inquirer.prompt(questions)["selected_packages"]  # type: ignore
     return selected_packages
@@ -78,10 +78,10 @@ def create_virtualenv(virtualenv_name) -> str:
     Creates a virtual environment with the given name.
 
         Args:
-                virtualenv_name (str): The name for the virtual environment.
+            virtualenv_name (str): The name for the virtual environment.
 
-                    Returns:
-                            str: The path to the created virtual environment.
+        Returns:
+            str: The path to the created virtual environment.
 
     """
     cwd = os.getcwd()
@@ -137,20 +137,20 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
         else:
             new_package_name = package.replace("-", "_")
             pattern = re.sub(r"^py", "", new_package_name, flags=re.IGNORECASE)
-            spec = importlib.util.find_spec(pattern.lower())
-            if spec is not None:
-                if not os.path.isfile(spec.origin):  # type: ignore
+            package_spec = importlib.util.find_spec(pattern.lower())
+            if package_spec is not None:
+                if package_spec.origin.endswith("__init__.py"):  # type: ignore
                     # Splitting if the package dit is not a file path
-                    package_dir = spec.origin.rsplit("/", 1)[0]  # type: ignore
+                    package_dir = package_spec.origin.rsplit("/", 1)[0]  # type: ignore
                     dir_list.append(package_dir)
                 else:
-                    dir_list.append(spec.origin)
+                    dir_list.append(package_spec.origin)
             else:
                 new_package_name = new_package_name.split("_")[0]
-                spec = importlib.util.find_spec(new_package_name)
-                if spec is not None:
+                package_spec = importlib.util.find_spec(new_package_name)
+                if package_spec is not None:
                     try:
-                        package_dir = list(spec.submodule_search_locations)[0]  # type: ignore
+                        package_dir = list(package_spec.submodule_search_locations)[0]  # type: ignore
                         dir_list.append(package_dir)
                     except:
                         missing_dir_packages.append(package)
@@ -206,9 +206,10 @@ def main():
         defaultCommand = f"xcp --recursive {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
         try:
+            #Checking if xcp is installed
             subprocess.run(defaultCommand, check=True, shell=True)
         except:
-            command = f"cd --recursive {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
+            command = f"cp -r {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
                 
             subprocess.run(command, check=True, shell=True)
