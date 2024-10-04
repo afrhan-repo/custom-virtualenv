@@ -35,8 +35,7 @@ def user_package_choice():
 
     package_name_list = [package["package"]["package_name"] for package in all_packages]  # type: ignore
 
-
-    selected_packages = inquirer.fuzzy(message="What packages do you want in your venv:", choices=package_name_list,multiselect=True,max_height="79%",keybindings={"toggle": [{"key": "space"}]}).execute() #type: ignore
+    selected_packages = inquirer.fuzzy(message="What packages do you want in your venv:", choices=package_name_list, multiselect=True, max_height="79%", keybindings={"toggle": [{"key": "space"}]}).execute()  # type: ignore
     return selected_packages
 
 
@@ -162,7 +161,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
                     missing_dir_packages.append(package)
 
     if len(missing_dir_packages) != 0:
-        print("The following packages could not be found: ", missing_dir_packages,"\n")
+        print("The following packages could not be found: ", missing_dir_packages, "\n")
 
     # Converting the list to set to remove duplicates
     return list(set(dir_list)), missing_dir_packages  # type: ignore
@@ -223,7 +222,7 @@ def main():
         with open(args.list) as f:
             # Removing version number from the package names
             selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
-    
+
     all_dependencies = get_nested_dependencies(selected_packages)  # type: ignore
 
     # Determining the python version
