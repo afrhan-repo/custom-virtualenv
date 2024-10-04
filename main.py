@@ -1,12 +1,13 @@
 """
 This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "xcp" to make it faster
 """
+
 import argparse
 import venv
 import sys
 import re
 import os
-import inquirer
+from InquirerPy import inquirer
 import json
 import subprocess
 import importlib.util
@@ -34,14 +35,8 @@ def user_package_choice():
 
     package_name_list = [package["package"]["package_name"] for package in all_packages]  # type: ignore
 
-    questions = [
-        inquirer.Checkbox(
-            "selected_packages",
-            message="What packages do you want in your virtual environment?",
-            choices=package_name_list,
-        )
-    ]
-    selected_packages = inquirer.prompt(questions)["selected_packages"]  # type: ignore
+
+    selected_packages = inquirer.fuzzy(message="What packages do you want in your venv:", choices=package_name_list,multiselect=True,max_height="79%",keybindings={"toggle": [{"key": "space"}]}).execute() #type: ignore
     return selected_packages
 
 
@@ -74,11 +69,14 @@ def get_nested_dependencies(packages):
                     break
 
             if not package_found:
-                all_dependencies.append(package_name)  # Add the missing package to the list
+                all_dependencies.append(
+                    package_name
+                )  # Add the missing package to the list
 
         return all_dependencies
 
     return fetch_deps(packages)
+
 
 def create_virtualenv(virtualenv_name) -> str:
     """
@@ -95,7 +93,7 @@ def create_virtualenv(virtualenv_name) -> str:
 
     # Path to the virtual environment
     path_to_venv = os.path.join(cwd, virtualenv_name)
-    
+
     # command_to_create_venv = ["virtualenv", virtualenv_name, "-p", "python3"]
     # Check if the virtual environment already exists
     if os.path.exists(path_to_venv):
@@ -128,7 +126,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
 
     def add_to_dir(package_dir):
         if package_dir.endswith("__init__.py"):
-            #Sppiting the package_dir to get the parent directory
+            # Sppiting the package_dir to get the parent directory
             package_dir = package_dir.rsplit("/", 1)[0]
             dir_list.append(package_dir)
         else:
@@ -140,7 +138,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
         # Tring for chainging the package name
 
         if package_spec is not None:
-            add_to_dir(package_spec.origin)        
+            add_to_dir(package_spec.origin)
         else:
             new_package_name = package.replace("-", "_")
             pattern = re.sub(r"^py", "", new_package_name, flags=re.IGNORECASE)
@@ -152,27 +150,27 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
                 package_spec = importlib.util.find_spec(new_package_name)
 
                 if package_spec is not None:
-                    #Used try except block to handle the case when submodule_search_locations return None
+                    # Used try except block to handle the case when submodule_search_locations return None
                     try:
                         package_dir = list(package_spec.submodule_search_locations)[0]  # type: ignore
                         dir_list.append(package_dir)
                     except:
-                        #If submodule_search_locations return None ,then add to missing_dir_packages
+                        # If submodule_search_locations return None ,then add to missing_dir_packages
                         missing_dir_packages.append(package)
                 else:
-                    #If package_spec is None, then add to missing_dir_packages
+                    # If package_spec is None, then add to missing_dir_packages
                     missing_dir_packages.append(package)
 
     if len(missing_dir_packages) != 0:
-        print("The following packages could not be found: ", missing_dir_packages)
-        
-    #Converting the list to set to remove duplicates
+        print("The following packages could not be found: ", missing_dir_packages,"\n")
+
+    # Converting the list to set to remove duplicates
     return list(set(dir_list)), missing_dir_packages  # type: ignore
 
 
 def split_dir_list(folder_list, chunk_size):
     # Splitting the list into dir chunks of 'chunk_size'
-    #I did this because copying all the packages at once was taking too long and make code slow
+    # I did this because copying all the packages at once was taking too long and make code slow
     return [
         folder_list[i : i + chunk_size] for i in range(0, len(folder_list), chunk_size)
     ]
@@ -191,14 +189,18 @@ def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
 
 
 def parse_arguments():
-        parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager")
-        parser.add_argument('-i', '--interactive', action='store_true', help='Run in interactive mode')
-        parser.add_argument('-l', '--list', metavar='file', help='Provide requirements file')
-        
-        return parser.parse_args()
+    parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager")
+    parser.add_argument(
+        "-i", "--interactive", action="store_true", help="Run in interactive mode"
+    )
+    parser.add_argument(
+        "-l", "--list", metavar="file", help="Provide requirements file"
+    )
+
+    return parser.parse_args()
 
 
-#Main function to run the program
+# Main function to run the program
 def main():
 
     if len(sys.argv) == 1:  # No arguments provided
@@ -210,8 +212,8 @@ def main():
         sys.exit(1)
 
     virtualenv_path = create_virtualenv(virtualenv_name)
-    
-    #Parsing the arguments
+
+    # Parsing the arguments
     args = parse_arguments()
 
     if args.interactive:
@@ -219,12 +221,12 @@ def main():
         selected_packages = user_package_choice()
     elif args.list:
         with open(args.list) as f:
-            #Removing version number from the package names
+            # Removing version number from the package names
             selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
-            print(selected_packages)
-    all_dependencies = get_nested_dependencies(selected_packages) # type: ignore
     
-    #Determining the python version 
+    all_dependencies = get_nested_dependencies(selected_packages)  # type: ignore
+
+    # Determining the python version
     version_info = sys.version_info
     version = f"{version_info.major}.{version_info.minor}"
 
@@ -238,15 +240,14 @@ def main():
         defaultCommand = f"xcp --recursive {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
         try:
-            #At first checking if xcp is installed
+            # At first checking if xcp is installed
             subprocess.run(["whereis", "xcp"], check=True, stdout=subprocess.DEVNULL)
 
             subprocess.run(defaultCommand, check=True, shell=True)
         except:
-            #Putting * in the command to copy all the .dist-info dirs
+            # Putting * in the command to copy all the .dist-info dirs
             command = f"cp -r {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
-                
             subprocess.run(command, check=True, shell=True)
 
         print(f"{i+1} out of {len(spilitted_dir_lists)} packages dir chunks copied")
@@ -256,5 +257,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    print(get_nested_dependencies("'sbsb"))
+    main()
