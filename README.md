@@ -9,11 +9,11 @@ This Python utility helps manage Python virtual environments, list installed pac
 
 ## Installation
 
-Ensure you have Python 3.x installed. Clone this repository and run:
+1. Install the package using pip.
 
-    ```
-    pip install custom-virtualenv --upgrade
-    ```
+   ```bash
+   pip install custom-virtualenv
+   ```
 ## Usage
 
 The tool provides two command-line flags:
