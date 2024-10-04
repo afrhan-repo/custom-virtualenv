@@ -2,6 +2,7 @@
 This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "xcp" to make it faster
 """
 import argparse
+import venv
 import sys
 import re
 import os
@@ -53,8 +54,11 @@ def get_nested_dependencies(packages):
         all_dependencies = []
 
         for package_name in package_list:
+            # Find the package in the installed packages
+            package_found = False
             for pkg in all_installed_packages:  # type: ignore
                 if pkg["package"]["package_name"] == package_name:
+                    package_found = True
                     if package_name in already_seen_packages:
                         continue  # Avoid infinite recursion
                     already_seen_packages.add(package_name)
@@ -67,11 +71,14 @@ def get_nested_dependencies(packages):
                     # Recursively get dependencies of each dependency
                     nested_deps = fetch_deps(direct_deps)
                     all_dependencies.extend(nested_deps)
+                    break
+
+            if not package_found:
+                all_dependencies.append(package_name)  # Add the missing package to the list
 
         return all_dependencies
 
     return fetch_deps(packages)
-
 
 def create_virtualenv(virtualenv_name) -> str:
     """
@@ -89,7 +96,7 @@ def create_virtualenv(virtualenv_name) -> str:
     # Path to the virtual environment
     path_to_venv = os.path.join(cwd, virtualenv_name)
     
-    command_to_create_venv = ["virtualenv", virtualenv_name, "-p", "python3"]
+    # command_to_create_venv = ["virtualenv", virtualenv_name, "-p", "python3"]
     # Check if the virtual environment already exists
     if os.path.exists(path_to_venv):
         print("Virtual environment already exists")
@@ -101,7 +108,8 @@ def create_virtualenv(virtualenv_name) -> str:
             command = ["rm", "-rf", path_to_venv]
             subprocess.run(command, check=True)
             print("Creating a new virtual environment")
-            subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
+            venv.create(virtualenv_name, with_pip=True)
+            # subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
             return path_to_venv
         else:
             print("Exiting")
@@ -109,7 +117,8 @@ def create_virtualenv(virtualenv_name) -> str:
 
     else:
         print("Creating virtual environment named ", virtualenv_name)
-        subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
+        venv.create(virtualenv_name, with_pip=True)
+        # subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
         return path_to_venv
 
 
@@ -141,6 +150,7 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
             else:
                 new_package_name = new_package_name.split("_")[0]
                 package_spec = importlib.util.find_spec(new_package_name)
+
                 if package_spec is not None:
                     #Used try except block to handle the case when submodule_search_locations return None
                     try:
@@ -150,10 +160,12 @@ def all_selected_Packages_dir(pacakges_list: list) -> list:
                         #If submodule_search_locations return None ,then add to missing_dir_packages
                         missing_dir_packages.append(package)
                 else:
-                    print(
-                        f"Could not find the package {package}. Installing them manually."
-                    )
+                    #If package_spec is None, then add to missing_dir_packages
                     missing_dir_packages.append(package)
+
+    if len(missing_dir_packages) != 0:
+        print("The following packages could not be found: ", missing_dir_packages)
+        
     #Converting the list to set to remove duplicates
     return list(set(dir_list)), missing_dir_packages  # type: ignore
 
@@ -209,6 +221,7 @@ def main():
         with open(args.list) as f:
             #Removing version number from the package names
             selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
+            print(selected_packages)
     all_dependencies = get_nested_dependencies(selected_packages) # type: ignore
     
     #Determining the python version 
@@ -243,4 +256,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    print(get_nested_dependencies("'sbsb"))
