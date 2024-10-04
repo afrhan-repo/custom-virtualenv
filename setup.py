@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="custom-virtualenv",
-    version="1.0.0",
-    description="A Python program to create your virtual environment with your desired packages installed in global or system interpreter.",
+    version="1.0.1",
+    description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="afrhan-repo",

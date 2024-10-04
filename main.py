@@ -188,12 +188,14 @@ def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager")
-    parser.add_argument(
+    parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.")
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
         "-i", "--interactive", action="store_true", help="Run in interactive mode"
     )
-    parser.add_argument(
-        "-l", "--list", metavar="file", help="Provide requirements file",nargs=1
+    group.add_argument(
+        "-l", "--list", metavar="file", help="Provide requirements file"
     )
 
     return parser.parse_args()
@@ -201,6 +203,8 @@ def parse_arguments():
 
 # Main function to run the program
 def main():
+
+    args = parse_arguments()
 
     if len(sys.argv) == 1:  # No arguments provided
         print("Error: No arguments provided. Use -i or -l flags.")
@@ -213,7 +217,7 @@ def main():
     virtualenv_path = create_virtualenv(virtualenv_name)
 
     # Parsing the arguments
-    args = parse_arguments()
+    
 
     if args.interactive:
         print("\nRunning in interactive mode")
