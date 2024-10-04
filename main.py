@@ -193,7 +193,7 @@ def parse_arguments():
         "-i", "--interactive", action="store_true", help="Run in interactive mode"
     )
     parser.add_argument(
-        "-l", "--list", metavar="file", help="Provide requirements file"
+        "-l", "--list", metavar="file", help="Provide requirements file",nargs=1
     )
 
     return parser.parse_args()
