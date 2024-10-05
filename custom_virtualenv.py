@@ -40,41 +40,41 @@ def user_package_choice():
 
 
 # Function to get dependencies recursively (single argument: list of package names)
-def get_nested_dependencies(packages):
+
+def get_nested_dependencies(packages: list):
     already_seen_packages = set()  # Track visited packages to avoid loops
     all_installed_packages = getAllInstalledPackage()
+    
+    # Create a dictionary for quick lookup of packages
+    package_dict = {pkg["package"]["package_name"]: pkg for pkg in all_installed_packages} # type: ignore
 
     def fetch_deps(package_list):
         all_dependencies = []
 
         for package_name in package_list:
-            # Find the package in the installed packages
-            package_found = False
-            for pkg in all_installed_packages:  # type: ignore
-                if pkg["package"]["package_name"] == package_name:
-                    package_found = True
-                    if package_name in already_seen_packages:
-                        continue  # Avoid infinite recursion
-                    already_seen_packages.add(package_name)
+            if package_name in already_seen_packages:
+                continue  # Skip if already seen to avoid infinite recursion
+            
+            already_seen_packages.add(package_name)
 
-                    # Get direct dependencies
-                    dependencies = pkg.get("dependencies", [])
-                    direct_deps = [dep["package_name"] for dep in dependencies]
-                    all_dependencies.extend(direct_deps)
+            # Check if the package exists in the installed packages
+            package = package_dict.get(package_name)
+            all_dependencies.append(package_name)  # Always include the package itself
+            if package:
+                # Get direct dependencies
+                dependencies = package.get("dependencies", [])
+                direct_deps = [dep["package_name"] for dep in dependencies]
+                all_dependencies.extend(direct_deps)
 
-                    # Recursively get dependencies of each dependency
-                    nested_deps = fetch_deps(direct_deps)
-                    all_dependencies.extend(nested_deps)
-                    break
-
-            if not package_found:
-                all_dependencies.append(
-                    package_name
-                )  # Add the missing package to the list
+                # Recursively get dependencies of each dependency
+                nested_deps = fetch_deps(direct_deps)
+                all_dependencies.extend(nested_deps)
 
         return all_dependencies
 
     return fetch_deps(packages)
+
+
 
 
 def create_virtualenv(virtualenv_name) -> str:
@@ -228,7 +228,7 @@ def main():
             selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
 
     all_dependencies = get_nested_dependencies(selected_packages)  # type: ignore
-
+    
     # Determining the python version
     version_info = sys.version_info
     version = f"{version_info.major}.{version_info.minor}"
@@ -240,18 +240,10 @@ def main():
     # cooy the packsges to the virtual environment
     spilitted_dir_lists = split_dir_list(all_packages_directory, chunk_size=15)
     for i, package_dir_chunks in enumerate(spilitted_dir_lists):
-        defaultCommand = f"xcp --recursive {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
 
-        try:
-            # At first checking if xcp is installed
-            subprocess.run(["which", "xcp"], check=True, stdout=subprocess.DEVNULL)
-
-            subprocess.run(defaultCommand, check=True, shell=True)
-        except:
             # Putting * in the command to copy all the .dist-info dirs
-            command = f"cp -r {'* '.join(package_dir_chunks)} {virtualenv_path}/lib/python{version}/site-packages/"
-
-            subprocess.run(command, check=True, shell=True)
+        command = f"cp -r {'* '.join(package_dir_chunks)}* {virtualenv_path}/lib/python{version}/site-packages/"
+        subprocess.run(command, check=True, shell=True)
 
         print(f"{i+1} out of {len(spilitted_dir_lists)} packages dir chunks copied")
 
