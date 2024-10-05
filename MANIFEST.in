@@ -1,0 +1,4 @@
+exclude venv*
+exclude build
+exclude dist
+ecclude custom_virtualenv.egg-info*
