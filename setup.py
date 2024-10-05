@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="custom-virtualenv",
-    version="1.0.2",
+    version="1.1.3",
     description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -10,8 +10,8 @@ setup(
     author_email="afrhanhossain11@gmail.com",
     url="https://github.com/afrhan-repo/custom-virtualenv",
     packages=find_packages(),
-    py_modules=["main"],
-    entry_points={"console_scripts": ["custom-virtualenv=main:main"]},
+    py_modules=["custom_virtualenv"],
+    entry_points={"console_scripts": ["custom-virtualenv=custom_virtualenv:main"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

@@ -244,7 +244,7 @@ def main():
 
         try:
             # At first checking if xcp is installed
-            subprocess.run(["whereis", "xcp"], check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(["which", "xcp"], check=True, stdout=subprocess.DEVNULL)
 
             subprocess.run(defaultCommand, check=True, shell=True)
         except:
