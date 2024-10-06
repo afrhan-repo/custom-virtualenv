@@ -1,6 +1,10 @@
-"""
-This program will create a virtual environment with the user selected packages and their dependencies.I have used command line tools such as "rm" or "xcp" to make it faster
-"""
+# Write a descriptiong for this project
+# This is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.
+# This utility will create a virtual environment with the name provided by the user and then copy the packages to the virtual environment.
+# The user can choose the packages they want in the virtual environment, and the utility will copy the packages to the virtual environment.
+# The utility will also install any missing packages in the virtual environment.
+# The user can run the utility in interactive mode or provide a requirements file with the packages they want in the virtual environment.
+# In this project I have used commands like "rm" and "cp" which are unix commands, so this script will only work on unix based systems like linux and macos.The reason behind using this is that it is more faster than shutil module functions.
 
 import argparse
 from virtualenv import cli_run as create_venv
@@ -10,7 +14,7 @@ import os
 from InquirerPy import inquirer
 import json
 import subprocess
-import importlib.util
+import importlib.util ,importlib.metadata
 
 
 # Get all installed packages in user global environment
@@ -41,12 +45,13 @@ def user_package_choice():
 
 # Function to get dependencies recursively (single argument: list of package names)
 
+
 def get_nested_dependencies(packages: list):
     already_seen_packages = set()  # Track visited packages to avoid loops
     all_installed_packages = getAllInstalledPackage()
-    
+
     # Create a dictionary for quick lookup of packages
-    package_dict = {pkg["package"]["package_name"]: pkg for pkg in all_installed_packages} # type: ignore
+    package_dict = {pkg["package"]["package_name"]: pkg for pkg in all_installed_packages}  # type: ignore
 
     def fetch_deps(package_list):
         all_dependencies = []
@@ -54,7 +59,7 @@ def get_nested_dependencies(packages: list):
         for package_name in package_list:
             if package_name in already_seen_packages:
                 continue  # Skip if already seen to avoid infinite recursion
-            
+
             already_seen_packages.add(package_name)
 
             # Check if the package exists in the installed packages
@@ -73,8 +78,6 @@ def get_nested_dependencies(packages: list):
         return all_dependencies
 
     return fetch_deps(packages)
-
-
 
 
 def create_virtualenv(virtualenv_name) -> str:
@@ -105,7 +108,7 @@ def create_virtualenv(virtualenv_name) -> str:
             command = ["rm", "-rf", path_to_venv]
             subprocess.run(command, check=True)
             print("Creating a new virtual environment")
-            #Create a new virtual environment
+            # Create a new virtual environment
             create_venv(([path_to_venv]))
             return path_to_venv
         else:
@@ -117,50 +120,51 @@ def create_virtualenv(virtualenv_name) -> str:
         create_venv(([path_to_venv]))
         return path_to_venv
 
-
+#Get the directory of all the packages and their metadata
 def all_selected_Packages_dir(pacakges_list: list) -> list:
     dir_list = []
     missing_dir_packages = []
 
-    def add_to_dir(package_dir):
-        if package_dir.endswith("__init__.py"):
-            # Sppiting the package_dir to get the parent directory
-            package_dir = package_dir.rsplit("/", 1)[0]
-            dir_list.append(package_dir)
-        else:
-            dir_list.append(package_dir)
+    # Function to get the metadata directory of a package
+    def add_metadata_dir(package_name : str):
+        try:
+            metadata_dir = importlib.metadata.distribution(package_name).locate_file(f"{package_name}.dist-info")
+            dir_list.append(metadata_dir)
+        except:
+            missing_dir_packages.append(package_name)
 
+    def add_to_dir(package_name,package_dir):
+        try :
+            dir_list.append(package_dir[0])
+            #If thr package directory is found then add the metadata directory
+            add_metadata_dir(package_name)
+        except:
+            missing_dir_packages.append(package)
     for package in pacakges_list:
         package_spec = importlib.util.find_spec(package)
 
         # Tring for chainging the package name
 
         if package_spec is not None:
-            add_to_dir(package_spec.origin)
+            add_to_dir(package,package_spec.submodule_search_locations)
         else:
             new_package_name = package.replace("-", "_")
             pattern = re.sub(r"^py", "", new_package_name, flags=re.IGNORECASE)
             package_spec = importlib.util.find_spec(pattern.lower())
             if package_spec is not None:
-                add_to_dir(package_spec.origin)
+                add_to_dir(package,package_spec.submodule_search_locations)
             else:
                 new_package_name = new_package_name.split("_")[0]
                 package_spec = importlib.util.find_spec(new_package_name)
 
                 if package_spec is not None:
-                    # Used try except block to handle the case when submodule_search_locations return None
-                    try:
-                        package_dir = list(package_spec.submodule_search_locations)[0]  # type: ignore
-                        dir_list.append(package_dir)
-                    except:
-                        # If submodule_search_locations return None ,then add to missing_dir_packages
-                        missing_dir_packages.append(package)
+                    add_to_dir(package,package_spec.submodule_search_locations)
                 else:
                     # If package_spec is None, then add to missing_dir_packages
                     missing_dir_packages.append(package)
 
     if len(missing_dir_packages) != 0:
-        print("The following packages could not be found: ", missing_dir_packages, "\n")
+        print("The following packages could not be found: ", missing_dir_packages, " Installing them through pip\n")
 
     # Converting the list to set to remove duplicates
     return list(set(dir_list)), missing_dir_packages  # type: ignore
@@ -187,15 +191,15 @@ def install_missing_packages(venv_path, missing_dir_packagesissingPackages):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.")
+    parser = argparse.ArgumentParser(
+        description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system."
+    )
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "-i", "--interactive", action="store_true", help="Run in interactive mode"
     )
-    group.add_argument(
-        "-l", "--list", metavar="file", help="Provide requirements file"
-    )
+    group.add_argument("-l", "--list", metavar="file", help="Provide requirements file")
 
     return parser.parse_args()
 
@@ -216,7 +220,6 @@ def main():
     virtualenv_path = create_virtualenv(virtualenv_name)
 
     # Parsing the arguments
-    
 
     if args.interactive:
         print("\nRunning in interactive mode")
@@ -227,7 +230,7 @@ def main():
             selected_packages = [line.split("==")[0] for line in f.read().splitlines()]
 
     all_dependencies = get_nested_dependencies(selected_packages)  # type: ignore
-    
+
     # Determining the python version
     version_info = sys.version_info
     version = f"{version_info.major}.{version_info.minor}"
@@ -237,24 +240,17 @@ def main():
         all_dependencies
     )
 
-    #Path to site-packages directory 
+    # Path to site-packages directory
     site_packages_path = f"{virtualenv_path}/lib/python{version}/site-packages/"
 
     # cooy the packsges to the virtual environment
-    spilitted_dir_lists = split_dir_list(all_packages_directory, chunk_size=15)
+    spilitted_dir_lists = split_dir_list(all_packages_directory, chunk_size=5)
     for i, package_dir_chunks in enumerate(spilitted_dir_lists):
 
-            # Putting * in the command to copy all the .dist-info dirs
+        # Putting * in the command to copy all the .dist-info dirs
         command = f"cp -r {' '.join(package_dir_chunks)} {site_packages_path}"
 
-        command_to_copy_dist_info = f"cp -r {' '.join(package_dir_chunks)}*.dist-info {site_packages_path}"
-        
         subprocess.run(command, check=True, shell=True)
-        try :
-            subprocess.run(command_to_copy_dist_info, check=True, shell=True)
-        except:
-            pass
-
         print(f"{i+1} out of {len(spilitted_dir_lists)} packages dir chunks copied")
 
     # Install the missing packages in the virtual environment

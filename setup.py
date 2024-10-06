@@ -8,7 +8,7 @@ if sys.platform == "win32":
 
 setup(
     name="custom-virtualenv",
-    version="1.2.3",
+    version="2.0.0",
     description="Custom Virtual Environment Manager is a utility that allows you to create virtual environments with packages of your choice, based on the Python packages installed globally on your system.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -22,8 +22,8 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS"
+        "Operating System :: MacOS",
     ],
     python_requires=">=3.7",
-    install_requires=["InquirerPy","pipdeptree","virtualenv"]
+    install_requires=["InquirerPy", "pipdeptree", "virtualenv"],
 )
