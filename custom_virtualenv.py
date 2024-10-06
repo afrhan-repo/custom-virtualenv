@@ -3,7 +3,7 @@ This program will create a virtual environment with the user selected packages a
 """
 
 import argparse
-import venv
+from virtualenv import cli_run as create_venv
 import sys
 import re
 import os
@@ -105,8 +105,8 @@ def create_virtualenv(virtualenv_name) -> str:
             command = ["rm", "-rf", path_to_venv]
             subprocess.run(command, check=True)
             print("Creating a new virtual environment")
-            venv.create(virtualenv_name, with_pip=True)
-            # subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
+            #Create a new virtual environment
+            create_venv(([path_to_venv]))
             return path_to_venv
         else:
             print("Exiting")
@@ -114,8 +114,7 @@ def create_virtualenv(virtualenv_name) -> str:
 
     else:
         print("Creating virtual environment named ", virtualenv_name)
-        venv.create(virtualenv_name, with_pip=True)
-        # subprocess.run(command_to_create_venv, check=True, stdout=subprocess.DEVNULL)
+        create_venv(([path_to_venv]))
         return path_to_venv
 
 
@@ -237,13 +236,24 @@ def main():
     all_packages_directory, missing_dir_packages = all_selected_Packages_dir(
         all_dependencies
     )
+
+    #Path to site-packages directory 
+    site_packages_path = f"{virtualenv_path}/lib/python{version}/site-packages/"
+
     # cooy the packsges to the virtual environment
     spilitted_dir_lists = split_dir_list(all_packages_directory, chunk_size=15)
     for i, package_dir_chunks in enumerate(spilitted_dir_lists):
 
             # Putting * in the command to copy all the .dist-info dirs
-        command = f"cp -r {'* '.join(package_dir_chunks)}* {virtualenv_path}/lib/python{version}/site-packages/"
+        command = f"cp -r {' '.join(package_dir_chunks)} {site_packages_path}"
+
+        command_to_copy_dist_info = f"cp -r {' '.join(package_dir_chunks)}*.dist-info {site_packages_path}"
+        
         subprocess.run(command, check=True, shell=True)
+        try :
+            subprocess.run(command_to_copy_dist_info, check=True, shell=True)
+        except:
+            pass
 
         print(f"{i+1} out of {len(spilitted_dir_lists)} packages dir chunks copied")
 

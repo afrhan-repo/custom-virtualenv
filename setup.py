@@ -25,5 +25,5 @@ setup(
         "Operating System :: MacOS"
     ],
     python_requires=">=3.7",
-    install_requires=["InquirerPy","pipdeptree"],
+    install_requires=["InquirerPy","pipdeptree","virtualenv"]
 )
